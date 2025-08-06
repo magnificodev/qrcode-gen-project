@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: qrcode_db
+      POSTGRES_USER: qrcode_user
+      POSTGRES_PASSWORD: qrcode_pass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  backend:
+    build: .
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    environment:
+      - DATABASE_URL=postgresql://qrcode_user:qrcode_pass@db:5432/qrcode_db
+    volumes:
+      - ./media:/app/media
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./media:/app/media
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
