@@ -2,36 +2,57 @@ version: '3.8'
 
 services:
   db:
-    image: postgres:15
+    image: postgres:15-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_DB: qrcode_db
       POSTGRES_USER: qrcode_user
-      POSTGRES_PASSWORD: qrcode_pass
+      POSTGRES_PASSWORD: secure_password_123
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - backend
     ports:
-      - "5432:5432"
+      - "5432:5432"  # Optional: for external access
 
   backend:
-    build: .
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      - DEBUG=False
+      - DATABASE_URL=postgresql://qrcode_user:secure_password_123@db:5432/qrcode_db
+      - ALLOWED_HOSTS=localhost,127.0.0.1,YOUR_SERVER_IP
     ports:
       - "8000:8000"
+    volumes:
+      - ./media:/app/media
+      - ./backend:/app  # For development
     depends_on:
       - db
-    environment:
-      - DATABASE_URL=postgresql://qrcode_user:qrcode_pass@db:5432/qrcode_db
-    volumes:
-      - ./media:/app/media
+    networks:
+      - backend
+    command: >
+      sh -c "python manage.py makemigrations &&
+             python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
 
-  nginx:
-    image: nginx:alpine
+  frontend:
+    build: 
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
     ports:
       - "80:80"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
-      - ./media:/app/media
+      - "3000:3000"  # Optional: for dev access
     depends_on:
+      - backend
+    networks:
       - backend
 
 volumes:
   postgres_data:
+
+networks:
+  backend:
