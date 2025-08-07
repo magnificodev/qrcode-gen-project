@@ -1,0 +1,46 @@
+version: "3.8"
+
+services:
+    # Backend - Django REST Framework với SQLite
+    backend:
+        build:
+            context: ./backend
+            dockerfile: Dockerfile
+        container_name: qrcode_backend
+        env_file:
+            - ./backend/.env
+        volumes:
+            - static_volume:/app/staticfiles
+            - media_volume:/app/media
+            - db_volume:/app # Mount để persist SQLite file
+        ports:
+            - "8000:8000"
+        restart: unless-stopped
+        networks:
+            - qrcode_network
+
+    # Frontend - React với Nginx
+    frontend:
+        build:
+            context: ./frontend
+            dockerfile: Dockerfile
+        container_name: qrcode_frontend
+        env_file:
+            - ./frontend/.env
+        ports:
+            - "80:80"
+        restart: unless-stopped
+        networks:
+            - qrcode_network
+
+networks:
+    qrcode_network:
+        driver: bridge
+
+volumes:
+    static_volume:
+        driver: local
+    media_volume:
+        driver: local
+    db_volume:
+        driver: local
