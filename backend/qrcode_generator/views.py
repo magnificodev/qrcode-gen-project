@@ -6,30 +6,10 @@ from django.core.files.base import ContentFile
 import os
 from .models import QRCode, QRBatch
 from .serializers import QRCodeSerializer, QRBatchSerializer
-import qrcode
 import io
 import zipfile
 import openpyxl
-
-
-def generate_qr_image(url):
-    """Create QR code image from URL"""
-    qr = qrcode.QRCode(
-        version=1,
-        error_correction=qrcode.constants.ERROR_CORRECT_L,
-        box_size=10,
-        border=4,
-    )
-    qr.add_data(url)
-    qr.make(fit=True)
-
-    img = qr.make_image(fill_color="black", back_color="white")
-
-    # Convert to RGB if needed
-    if img.mode != "RGB":
-        img = img.convert("RGB")
-
-    return img
+from .utils import normalize_url, generate_qr_image
 
 
 @api_view(["POST"])
@@ -40,14 +20,16 @@ def create_qrcode(request):
         return Response(
             {"error": "URL is required"}, status=status.HTTP_400_BAD_REQUEST
         )
+        
+    normalized_url = normalize_url(url)
 
     # Create or get existing QR code
-    qr_id = QRCode.generate_id_from_url(url)
-    qrcode_obj, created = QRCode.objects.get_or_create(id=qr_id, defaults={"url": url})
+    qr_id = QRCode.generate_id_from_url(normalize_url)
+    qrcode_obj, created = QRCode.objects.get_or_create(id=qr_id, defaults={"url": normalize_url})
 
     # If new, generate QR image
     if created or not qrcode_obj.image:
-        img = generate_qr_image(url)
+        img = generate_qr_image(normalized_url)
 
         # Save image to model
         buffer = io.BytesIO()
@@ -83,8 +65,9 @@ def create_batch_qrcode(request):
 
         urls = set()  # Use set to avoid duplicates
         for row in ws.iter_rows(min_row=1, values_only=True):
-            if row[0] and str(row[0]).startswith(("http://", "https://")):
-                urls.add(str(row[0]).strip())
+            if row[0]:
+                url = normalize_url(str(row[0]).strip())
+                urls.add(url)
 
         if not urls:
             return Response(
