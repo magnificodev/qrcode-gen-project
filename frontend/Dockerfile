@@ -1,26 +1,18 @@
-# ======= Stage 1: Build =======
-FROM node:20-alpine AS builder
+# --- Stage 1: Build Vite ---
+FROM node:20 AS builder
 
 WORKDIR /app
-
-# Copy code và cài dependencies
-COPY package*.json ./
-RUN npm install
-
-# Copy toàn bộ project
 COPY . .
 
-# Build production
+RUN npm install
 RUN npm run build
 
-# ======= Stage 2: Serve với Nginx =======
+# --- Stage 2: Serve with Nginx ---
 FROM nginx:alpine
 
-# Copy file build sang thư mục Nginx
+# Copy build output
 COPY --from=builder /app/dist /usr/share/nginx/html
-
-# Copy file cấu hình Nginx tùy chỉnh (nếu có)
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY nginx.conf /etc/nginx/nginx.conf
 
 EXPOSE 80
 
