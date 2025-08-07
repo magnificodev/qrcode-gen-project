@@ -24,5 +24,5 @@ COPY . .
 # Expose port (cho Uvicorn hoặc Gunicorn)
 EXPOSE 8000
 
-# Command để chạy server trong dev mode
+# Command để chạy server trong production mode
 CMD ["gunicorn", "qrcode_project.wsgi:application", "--bind", "0.0.0.0:8000"]
