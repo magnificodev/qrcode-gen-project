@@ -1,61 +1,31 @@
 version: "3.8"
 
 services:
-    # Backend - Django REST Framework với SQLite
-    backend:
-        build:
-            context: ./backend
-            dockerfile: Dockerfile
-        container_name: qrcode_backend
-        env_file:
-            - ./backend/.env
-        volumes:
-            - static_volume:/app/staticfiles
-            - media_volume:/app/media
-            - db_volume:/app # Persist SQLite
-        expose:
-            - "8000"
-        restart: unless-stopped
-        networks:
-            - qrcode_network
-    # Nginx cho backend - Serve static & media
-    backend_nginx:
-        image: nginx:latest
-        container_name: qrcode_backend_nginx
-        depends_on:
-            - backend
-        ports:
-            - "8001:80"
-        volumes:
-            - static_volume:/app/staticfiles
-            - media_volume:/app/media
-            - ./backend/nginx.conf:/etc/nginx/conf.d/default.conf:ro
-        networks:
-            - qrcode_network
-        restart: unless-stopped
+  backend:
+    container_name: qrcode_backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    env_file:
+      - ./backend/.env
+    volumes:
+      - ./backend:/app
+      - ./backend/media:/var/www/media
+      - ./backend/staticfiles:/var/www/static
+    restart: unless-stopped
 
-    # Frontend - React với Nginx
-    frontend:
-        build:
-            context: ./frontend
-            dockerfile: Dockerfile
-        container_name: qrcode_frontend
-        env_file:
-            - ./frontend/.env
-        ports:
-            - "80:80"
-        restart: unless-stopped
-        networks:
-            - qrcode_network
-
-networks:
-    qrcode_network:
-        driver: bridge
-
-volumes:
-    static_volume:
-        driver: local
-    media_volume:
-        driver: local
-    db_volume:
-        driver: local
+  nginx:
+    container_name: qrcode_nginx
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    env_file:
+      - ./frontend/.env   # Nếu frontend cần biến runtime (hiếm)
+    ports:
+      - "80:80"
+    volumes:
+      - ./backend/media:/var/www/media
+      - ./backend/staticfiles:/var/www/static
+    depends_on:
+      - backend
+    restart: unless-stopped

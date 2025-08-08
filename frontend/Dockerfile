@@ -1,19 +1,17 @@
-# --- Stage 1: Build Vite ---
-FROM node:20 AS builder
-
+# Build stage
+FROM node:18-alpine AS build
 WORKDIR /app
+COPY package*.json ./
+RUN npm ci
 COPY . .
-
-RUN npm install
 RUN npm run build
 
-# --- Stage 2: Serve with Nginx ---
+# Production stage
 FROM nginx:alpine
+COPY --from=build /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Copy build output
-COPY --from=builder /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/nginx.conf
+RUN mkdir -p /var/www/media /var/www/static
 
 EXPOSE 80
-
 CMD ["nginx", "-g", "daemon off;"]
