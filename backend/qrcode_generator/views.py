@@ -24,8 +24,8 @@ def create_qrcode(request):
     normalized_url = normalize_url(url)
 
     # Create or get existing QR code
-    qr_id = QRCode.generate_id_from_url(normalize_url)
-    qrcode_obj, created = QRCode.objects.get_or_create(id=qr_id, defaults={"url": normalize_url})
+    qr_id = QRCode.generate_id_from_url(normalized_url)
+    qrcode_obj, created = QRCode.objects.get_or_create(id=qr_id, defaults={"url": normalized_url})
 
     # If new, generate QR image
     if created or not qrcode_obj.image:

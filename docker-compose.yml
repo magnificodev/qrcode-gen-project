@@ -12,12 +12,27 @@ services:
         volumes:
             - static_volume:/app/staticfiles
             - media_volume:/app/media
-            - db_volume:/app # Mount để persist SQLite file
-        ports:
-            - "8000:8000"
+            - db_volume:/app # Persist SQLite
+        expose:
+            - "8000"
         restart: unless-stopped
         networks:
             - qrcode_network
+    # Nginx cho backend - Serve static & media
+    backend_nginx:
+        image: nginx:latest
+        container_name: qrcode_backend_nginx
+        depends_on:
+            - backend
+        ports:
+            - "8001:80"
+        volumes:
+            - static_volume:/app/staticfiles
+            - media_volume:/app/media
+            - ./backend/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+        networks:
+            - qrcode_network
+        restart: unless-stopped
 
     # Frontend - React với Nginx
     frontend:

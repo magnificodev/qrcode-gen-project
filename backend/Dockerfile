@@ -17,6 +17,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Sao chép toàn bộ source code vào container
 COPY . .
 
+# Run collectstatic to collect staticfiles
+RUN python manage.py collectstatic --noinput
+
 # Mặc định expose cổng 8000
 EXPOSE 8000
 
